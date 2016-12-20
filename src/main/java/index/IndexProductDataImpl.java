@@ -12,26 +12,27 @@ import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.Client;
 
 import common.Constant;
-import data.Contribution;
+import data.Bug;
 
 public class IndexProductDataImpl implements IndexProductData {
 
-   public void createIndex(Contribution contrib, Client client) {
+   public void createIndex(Bug bug, Client client) {
       try {
          IndexResponse response = client
-               .prepareIndex(Constant.INDEX_NAME, Constant.TYPE_NAME, contrib.getId())
-               .setSource(convertContribution(contrib)).execute().actionGet();
+               .prepareIndex(Constant.INDEX_NAME, Constant.TYPE_NAME,
+                     bug.getBug_id())
+               .setSource(convertContribution(bug)).execute().actionGet();
       } catch (Exception e) {
          e.printStackTrace();
       }
    }
 
 
-   private String convertContribution(Contribution contrib) {
+   private String convertContribution(Bug bug) {
       String json = "";
       ObjectMapper mapper = new ObjectMapper();
       try {
-         json = mapper.writeValueAsString(contrib);
+         json = mapper.writeValueAsString(bug);
       } catch (JsonGenerationException e) {
          System.out.println("ERROR: " + e.getMessage());
       } catch (JsonMappingException e) {
@@ -42,15 +43,13 @@ public class IndexProductDataImpl implements IndexProductData {
       return json;
    }
 
-   public void deleteIndex(Contribution contrib, Client client) {
+   public void deleteIndex(Bug bug, Client client) {
       @SuppressWarnings("unused")
-      DeleteResponse response =
-            client.prepareDelete(Constant.INDEX_NAME, Constant.TYPE_NAME, contrib.getId()).execute()
-                  .actionGet();
+      DeleteResponse response = client.prepareDelete(Constant.INDEX_NAME,
+            Constant.TYPE_NAME, bug.getBug_id()).execute().actionGet();
       refreshIndex(client);
 
    }
-
 
    public void refreshIndex(Client client) {
       System.out.println("just refreshing the index and moving out");
@@ -58,19 +57,19 @@ public class IndexProductDataImpl implements IndexProductData {
    }
 
 
-   public void updateIndex(Contribution contrib, Client client) {
+   public void updateIndex(Bug contrib, Client client) {
       UpdateRequest updateRequest = new UpdateRequest();
       updateRequest.index(Constant.INDEX_NAME);
       updateRequest.type(Constant.TYPE_NAME);
-      updateRequest.id(contrib.getId());
+      updateRequest.id(contrib.getBug_id());
       updateRequest.doc(convertContribution(contrib));
       try {
-              client.update(updateRequest).get();
+         client.update(updateRequest).get();
       } catch (InterruptedException e) {
-              System.out.println("ERROR: " + e.getMessage());
+         System.out.println("ERROR: " + e.getMessage());
       } catch (ExecutionException e) {
-              System.out.println("ERROR: " + e.getMessage());
-      } 
+         System.out.println("ERROR: " + e.getMessage());
+      }
       refreshIndex(client);
    }
 }

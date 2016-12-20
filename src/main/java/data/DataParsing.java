@@ -19,29 +19,6 @@ public class DataParsing {
    private static IndexProductDataImpl indexOpr;
 
    /**
-    * This method is used to read the states CSV file
-    * 
-    * @return
-    */
-   public static Map<String, String> readStates(String csvFilename) {
-      Map<String, String> stat = new HashMap<String, String>();
-      statesCSV = readCSV(csvFilename);
-      String[] nextLine;
-      try {
-         int count = 0;
-         while ((nextLine = statesCSV.readNext()) != null) {
-            if (count > 0) {
-               stat.put(nextLine[1], nextLine[0]);
-            }
-            count++;
-         }
-      } catch (Exception e) {
-         System.out.println("ERROR: " + e.getMessage());
-      }
-      return stat;
-   }
-
-   /**
     * This method is used to setup the CSVReader and obtain the file data
     * 
     * @param filename
@@ -58,14 +35,13 @@ public class DataParsing {
    }
 
    /**
-    * This method is used to process each of the contributions and creating index
-    * in ES
+    * This method is used to process each of the contributions and creating
+    * index in ES
     * 
     * @param csvFilename
     * @param mappedStates
     */
-   public static void processContributions(String csvFilename,
-         Map<String, String> mappedStates, Client client) {
+   public static void processBugs(String csvFilename, Client client) {
       contribsCSV = readCSV(csvFilename);
       String[] nextLine;
       try {
@@ -73,16 +49,15 @@ public class DataParsing {
          while ((nextLine = contribsCSV.readNext()) != null) {
             if (count > 0) {
                // Read each line of data csv and store in object
-               Contribution contrib =
-                     contributionFactory(nextLine, mappedStates);
+               Bug bug = bugFactory(nextLine);
                try {
                   indexOpr = new IndexProductDataImpl();
-                  indexOpr.createIndex(contrib, client);
+                  indexOpr.createIndex(bug, client);
                   System.out.println(
-                        "(" + count + ") Document created: " + contrib.getId());
+                        "(" + count + ") Document created: " + bug.getBug_id());
                } catch (Exception e) {
                   System.out.println("(" + count + ") Document NOT created: "
-                        + contrib.getId());
+                        + bug.getBug_id());
                   e.printStackTrace();
                }
             }
@@ -95,41 +70,34 @@ public class DataParsing {
    }
 
    /**
-    * This method is used to build a new Contribution object and map the values
+    * This method is used to build a new Bug object and map the values
     * of the CSV onto this object
     * 
     * @param row
     * @param states
     * @return
     */
-   private static Contribution contributionFactory(String[] row,
-         Map<String, String> states) {
-      Contribution contrib = new Contribution();
-      contrib.setId(row[16]); //tran_id
-      contrib.setCandidateName(row[2]); // cand_nm
-      contrib.setContributorName(row[3]); // contbr_nm
-      contrib.setContributorCity(row[4]); // contbr_city
-      contrib.setContributorStateCode(row[5]); // contbr_st
-
-      contrib.setContributorState(states.get(contrib.getContributorStateCode()) // mapped state
-      );
-
-      contrib.setContributorZip(row[6]); // contbr_zip
-      contrib.setContributorEmployer(row[7]); // contbr_employer
-      contrib.setContributorOccupation(row[8]); // contbr_occupation
-      contrib.setAmount(Double.parseDouble(row[9])); // contbr_receipt_amt
-      contrib.setDate(row[10]); // contbr_receipt_dt
-
-      return contrib;
+   private static Bug bugFactory(String[] row) {
+      Bug bug = new Bug();
+      bug.setBug_id(row[0]);
+      bug.setSeverity(row[1]);
+      bug.setPriority(row[2]);
+      bug.setStatus(row[3]);
+      bug.setAssignee(row[4]);
+      bug.setReporter(row[5]);
+      bug.setCategory(row[6]);
+      bug.setComponent(row[7]);
+      bug.setSummary(row[8]);
+      return bug;
    }
 
    /**
-    * This method is used to convert a Contribution object into a JSON string
+    * This method is used to convert a bugs object into a JSON string
     * 
     * @param contrib
     * @return
     */
-   private static String convertContribution(Contribution contrib) {
+   private static String convertContribution(Bug contrib) {
       String json = "";
       ObjectMapper mapper = new ObjectMapper();
       try {
